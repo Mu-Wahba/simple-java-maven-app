@@ -1,16 +1,20 @@
 pipeline {
     agent {
-            dockerfile true
-     }
+            docker {
+                     image 'maven:3-alpine'
+                   }
+    }
     environment{
 	    MY_EMAIL = credentials('my_email')
+	    DOCKER_USER = credentials('docker_user')
+	    DOCKER_PASS = credentials('docker_pass')
 	}
     stages {
         stage('Build') {
             steps {
                 sh 'mvn -B -DskipTests clean package'
-             }
-         }
+            }
+        }
         stage('Test') {
             steps {
                 sh 'mvn test'
@@ -21,12 +25,12 @@ pipeline {
                 }
             }
         }
-        stage('Deliver') {
+        stage('Dockerize_App') {
             steps {
-		timeout(time:20 , unit:'SECONDS'){
-			input message: 'are you sure', ok:'YES!',submitter:'admin'
-		}
-                sh './scripts/deliver.sh'
+                sh "docker build -t ${DOCKER_USER}/my-app:${BUILD_NUMBER} ."
+                sh "docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}"
+                sh "docker push ${DOCKER_USER}/my-app:${BUILD_NUMBER}"
+                
             }
             post {
 		success {
@@ -35,7 +39,8 @@ pipeline {
 			   subject: "Successs ${JOB_NAME}",
 			   body: "Running build: ${BUILD_NUMBER} by executer ${EXECUTOR_NUMBER} , on node: ${NODE_NAME}")
  			}		
-        	}	
+
+		}	
 	}
     }
     post {
@@ -47,7 +52,7 @@ pipeline {
 	buildDiscarder(logRotator(numToKeepStr:'3'))
 	timeout(time:60, unit:'MINUTES')
 
-  }   
+}   
 
 }
 
