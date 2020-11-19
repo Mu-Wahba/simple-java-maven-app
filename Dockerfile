@@ -1,6 +1,9 @@
 # used multi-stage builds to minimize application image size
 # maintainer="Muhammad Wahba" release_date="March,29"
 
+
+
+#commen
 #clone simple java app from github
 #FROM alpine/git
 #WORKDIR /java-app
